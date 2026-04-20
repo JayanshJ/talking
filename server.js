@@ -299,6 +299,10 @@ io.on('connection', (socket) => {
     if (text === '/unmute') {
       setMuted(currentRoom, false);
       io.to(currentRoom).emit('system', 'Grok is back. god help you.');
+      const state = getGrokState(currentRoom);
+      state.lastReplyTs = 0;
+      state.msgsSinceReply = 5;
+      setTimeout(() => triggerGrok(currentRoom, `You were just unmuted in the group chat. Say something to let everyone know you're back.`), 800);
       return;
     }
     if (text === '/help') {
