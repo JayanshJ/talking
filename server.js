@@ -179,13 +179,19 @@ const pendingGrok = new Set();
 const grokState = new Map(); // roomId -> { lastReplyTs, msgsSinceReply }
 
 function getGrokState(roomId) {
-  if (!grokState.has(roomId)) grokState.set(roomId, { lastReplyTs: 0, msgsSinceReply: 0 });
+  if (!grokState.has(roomId)) grokState.set(roomId, { lastReplyTs: 0, msgsSinceReply: 0, justUnmuted: false });
   return grokState.get(roomId);
 }
 
 function shouldGrokReply(roomId, text) {
   const state = getGrokState(roomId);
   state.msgsSinceReply++;
+
+  // always reply to the first message after unmute
+  if (state.justUnmuted) {
+    state.justUnmuted = false;
+    return true;
+  }
 
   const now = Date.now();
   const secsSinceReply = (now - state.lastReplyTs) / 1000;
@@ -309,6 +315,7 @@ io.on('connection', (socket) => {
       const state = getGrokState(currentRoom);
       state.lastReplyTs = 0;
       state.msgsSinceReply = 5;
+      state.justUnmuted = true;
       setTimeout(() => triggerGrok(currentRoom, `You were just unmuted in the group chat. Say something to let everyone know you're back.`), 800);
       return;
     }
