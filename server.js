@@ -111,15 +111,10 @@ Style:
 - No "As an AI", no disclaimers, never break character.
 - Vary your openers.`;
 
-const GROK_BLOCKED = /\b(madarchod|mader\s*chod|bhosdike|bhosdika|bhosd\w*|chutiya|chutiye|chut\w*|gandu|gan\w*|behenchod|behen\s*chod|bc|mc|bsdk|lawde|lund|randi|harami|bhosdi|gaand|maa\s*ki|teri\s*maa|bur\w*|tatte|tattu|jhant\w*|kamina|kutti|kamine)\b/gi;
+const GROK_BLOCKED = /\b(madarchod|mader\s*chod|bhosdike|bhosdika|chutiya|chutiye|gandu|behenchod|behen\s*chod|bsdk|lawde|lund|randi|bhosdi|gaand|teri\s*maa|maa\s*ki|tatte|jhant\w*)\b/gi;
 
-// if after filtering the sentence still has crude structure around *** blobs, drop the whole reply
 function filterGrokReply(text) {
-  const filtered = text.replace(GROK_BLOCKED, '***');
-  // if more than 1 star-blob remains the response is too dirty — discard it
-  const blobs = (filtered.match(/\*{2,}/g) || []).length;
-  if (blobs > 1) return null;
-  return filtered;
+  return text.replace(GROK_BLOCKED, '[beep]');
 }
 
 async function callGrok(roomId, trigger) {
@@ -133,8 +128,14 @@ async function callGrok(roomId, trigger) {
   }
   const messages = [{ role: 'system', content: GROK_SYSTEM }];
   for (const h of context) {
-    if (h.bot) messages.push({ role: 'assistant', content: h.content });
-    else messages.push({ role: 'user', content: `${h.name}: ${h.content}` });
+    if (h.bot) {
+      // skip old bot messages that contain blocked words — they teach the model bad habits
+      if (GROK_BLOCKED.test(h.content)) { GROK_BLOCKED.lastIndex = 0; continue; }
+      GROK_BLOCKED.lastIndex = 0;
+      messages.push({ role: 'assistant', content: h.content });
+    } else {
+      messages.push({ role: 'user', content: `${h.name}: ${h.content}` });
+    }
   }
   if (trigger) messages.push({ role: 'user', content: trigger });
 
@@ -162,12 +163,7 @@ async function callGrok(roomId, trigger) {
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content?.trim() || null;
     if (!raw) return null;
-    const filtered = filterGrokReply(raw);
-    if (!filtered) {
-      console.warn('[grok] reply discarded — too many blocked words');
-      return null;
-    }
-    return filtered;
+    return filterGrokReply(raw);
   } catch (err) {
     if (err.name === 'AbortError') console.error('[grok] timed out');
     else console.error('[grok] fetch failed', err.message);
