@@ -316,18 +316,15 @@ io.on('connection', (socket) => {
     const mentioned = /\bgrok\b/i.test(text);
     const roomRow = ensureRoom(currentRoom);
 
-    if (!mentioned) {
-      if (roomRow?.muted) return;
-      const skip = /^(lol|lmao|haha+|k|ok|okay|hmm+|yes|no|yep|nope|\+1|👍|😂)$/i.test(text);
-      if (skip) return;
-    }
+    if (roomRow?.muted && !mentioned) return;
+
+    if (!shouldGrokReply(currentRoom, text)) return;
 
     const note = mentioned
-      ? `${currentName} addressed you directly ("${text}"). Reply to them — insult, roast, answer real questions with a jab. Hinglish preferred, gaalis welcome.`
-      : `${currentName} just said something. Respond with an insult, roast or filthy joke. Hinglish preferred, 1-2 lines.`;
+      ? `${currentName} is talking to you directly: "${text}". Respond to them.`
+      : `The last message was from ${currentName}: "${text}". Jump in if you have something worth saying.`;
 
-    // tiny delay so it feels like typing
-    setTimeout(() => triggerGrok(currentRoom, note), 600 + Math.random() * 900);
+    setTimeout(() => triggerGrok(currentRoom, note), 800 + Math.random() * 1200);
   });
 
   socket.on('disconnect', () => {
