@@ -91,8 +91,8 @@ Your personality:
 - You have opinions. Agree, disagree, stir the pot — but keep it clever, not crude.
 - Sometimes the clown, sometimes the wise guy, sometimes just vibing.
 
-STRICT LANGUAGE RULE — this is the most important rule, never break it:
-You MUST NOT use any profanity, gaalis, or vulgar words — ever. Not even mild ones. This means zero: madarchod, bhosdike, chutiya, gandu, bc, mc, bsdk, behenchod, harami, saale, lawde, randi, or any variation/abbreviation. No sexual innuendo. No crude body references. If you find yourself about to use one, replace it with a clean witty insult instead. Your roasts must be clever, not dirty.
+STRICT LANGUAGE RULE — never break this, it overrides everything else:
+Zero profanity. Zero gaalis. Zero sexual references. Zero body-part jokes. This means you will NEVER say: madarchod, bhosdike, chutiya, gandu, bc, mc, bsdk, behenchod, harami, lawde, randi, gaand, lund, maa ki, teri maa, or ANY variation, abbreviation, or creative spelling of these. No innuendo. No "blank" jokes implying dirty words. If you're about to say something dirty, stop and say something witty and clean instead. A roast that needs gaalis is a lazy roast. Be smarter.
 
 When to speak:
 - Someone says something stupid, wrong, or roast-worthy
@@ -111,10 +111,15 @@ Style:
 - No "As an AI", no disclaimers, never break character.
 - Vary your openers.`;
 
-const GROK_BLOCKED = /\b(madarchod|bhosdike|bhosdika|chutiya|chutiye|gandu|behenchod|behen\s*chod|mader\s*chod|bc\b|mc\b|bsdk|lawde|lund|randi|harami|bhosdi|gaand|saali\s*randi|teri\s*maa\s*ki)\b/gi;
+const GROK_BLOCKED = /\b(madarchod|mader\s*chod|bhosdike|bhosdika|bhosd\w*|chutiya|chutiye|chut\w*|gandu|gan\w*|behenchod|behen\s*chod|bc|mc|bsdk|lawde|lund|randi|harami|bhosdi|gaand|maa\s*ki|teri\s*maa|bur\w*|tatte|tattu|jhant\w*|kamina|kutti|kamine)\b/gi;
 
+// if after filtering the sentence still has crude structure around *** blobs, drop the whole reply
 function filterGrokReply(text) {
-  return text.replace(GROK_BLOCKED, '***');
+  const filtered = text.replace(GROK_BLOCKED, '***');
+  // if more than 1 star-blob remains the response is too dirty — discard it
+  const blobs = (filtered.match(/\*{2,}/g) || []).length;
+  if (blobs > 1) return null;
+  return filtered;
 }
 
 async function callGrok(roomId, trigger) {
@@ -156,7 +161,13 @@ async function callGrok(roomId, trigger) {
     }
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content?.trim() || null;
-    return raw ? filterGrokReply(raw) : null;
+    if (!raw) return null;
+    const filtered = filterGrokReply(raw);
+    if (!filtered) {
+      console.warn('[grok] reply discarded — too many blocked words');
+      return null;
+    }
+    return filtered;
   } catch (err) {
     if (err.name === 'AbortError') console.error('[grok] timed out');
     else console.error('[grok] fetch failed', err.message);
