@@ -223,6 +223,13 @@
     els.input.focus();
   });
 
+  document.querySelectorAll('.cmd').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (!socket?.connected) return;
+      socket.emit('message', btn.dataset.cmd);
+    });
+  });
+
   els.leave.addEventListener('click', () => {
     if (socket) socket.disconnect();
     localStorage.removeItem('room');
