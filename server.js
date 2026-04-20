@@ -14,6 +14,7 @@ import {
   setMuted,
   closeDb,
 } from './db.js';
+import { startTelegramBot } from './telegram.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -381,6 +382,8 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`[talking] listening on :${PORT} (${NODE_ENV})`);
 });
+
+startTelegramBot();
 
 function shutdown(signal) {
   console.log(`[talking] ${signal} received, shutting down`);
