@@ -202,8 +202,8 @@ function shouldGrokReply(roomId, text) {
   return Math.random() < 0.12;
 }
 
-async function triggerGrok(roomId, systemNote) {
-  if (pendingGrok.has(roomId)) return;
+async function triggerGrok(roomId, systemNote, force = false) {
+  if (pendingGrok.has(roomId) && !force) return;
   pendingGrok.add(roomId);
   io.to(roomId).emit('typing', 'Grok');
   try {
@@ -328,7 +328,7 @@ io.on('connection', (socket) => {
       ? `${currentName} is talking to you directly: "${text}". Respond to them.`
       : `The last message was from ${currentName}: "${text}". Jump in if you have something worth saying.`;
 
-    setTimeout(() => triggerGrok(currentRoom, note), 800 + Math.random() * 1200);
+    setTimeout(() => triggerGrok(currentRoom, note, mentioned), 800 + Math.random() * 1200);
   });
 
   socket.on('disconnect', () => {

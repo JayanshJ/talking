@@ -115,9 +115,10 @@ export function startTelegramBot() {
     // save the message
     saveMessage({ room: roomId, name: senderName, content: text, isBot: false });
 
+    const mentioned = /\bgrok\b/i.test(text);
     const state = getChatState(chatId);
-    if (state.pending) return;
-    if (!shouldReply(chatId, text)) return;
+    if (state.pending && !mentioned) return;
+    if (!mentioned && !shouldReply(chatId, text)) return;
 
     state.pending = true;
     try {
