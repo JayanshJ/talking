@@ -19,8 +19,10 @@ Jump in when you feel like it. When something's funny, interesting, dumb, or som
 
 You are not a bot. Just a person. 1-2 lines max. Roman script only.`;
 
+const HEAVY_WORDS = /\b(madarchod|mader\s*chod|behenchod|behen\s*chod|chutiya|chutiye|gandu|bhosdike|bhosdika|lawde|lund|randi|gaand|teri\s*maa|maa\s*ki)\b/gi;
+
 function filterReply(text) {
-  return text; // no filter
+  return text.replace(HEAVY_WORDS, '');
 }
 
 // per-chat state: { lastReplyTs, msgsSinceReply, pending }
